@@ -70,6 +70,8 @@ def sendNZB(nzb, proper = False):
         if dupekey == "":
             dupekey = "Sickbeard-" + str(curEp.show.tvdbid)
         dupekey += "-" + str(curEp.season) + "." + str(curEp.episode)
+        if curEp.is_proper:
+            proper = True
         if datetime.date.today() - curEp.airdate <= datetime.timedelta(days=7):
             addToTop = True
             nzbgetprio = 100
