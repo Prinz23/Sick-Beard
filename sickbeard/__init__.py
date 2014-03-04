@@ -968,7 +968,7 @@ def initialize(consoleLogging=True):
         showUpdateScheduler = scheduler.Scheduler(showUpdaterInstance,
                                                cycleTime=showUpdaterInstance.updateInterval,
                                                threadName="SHOWUPDATER",
-                                               runImmediately=False)
+                                               runImmediately=True)
 
         versionCheckScheduler = scheduler.Scheduler(versionChecker.CheckVersion(),
                                                      cycleTime=datetime.timedelta(hours=12),

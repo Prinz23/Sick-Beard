@@ -18,6 +18,7 @@
 
 import datetime
 import os
+import helpers
 
 import sickbeard
 
@@ -45,9 +46,10 @@ class ShowUpdater():
         logger.log(u"Checking update interval", logger.DEBUG)
 
         hour_diff = update_datetime.time().hour - run_updater_time.hour
+        dayDiff = (datetime.datetime.now() - self._get_lastTVDBupdate()).days
 
         # if it's less than an interval after the update time then do an update (or if we're forcing it)
-        if hour_diff >= 0 and hour_diff < self.updateInterval.seconds / 3600 or force:
+        if hour_diff >= 0 and hour_diff < self.updateInterval.seconds / 3600 or dayDiff >=1 or force:
             logger.log(u"Doing full update on all shows")
         else:
             return
@@ -107,3 +109,28 @@ class ShowUpdater():
                 logger.log(u"Automatic update failed: " + ex(e), logger.ERROR)
 
         ui.ProgressIndicators.setIndicator('dailyUpdate', ui.QueueProgressIndicator("Daily Update", piList))
+        self._set_lastTVDBupdate(helpers.dt_to_timestamp())
+
+    def _set_lastTVDBupdate(self, when):
+
+        logger.log(u"Setting the last Proper search in the DB to " + str(when), logger.DEBUG)
+
+        myDB = db.DBConnection()
+        sqlResults = myDB.select("SELECT * FROM info")
+
+        if len(sqlResults) == 0:
+            myDB.action("INSERT INTO info (last_backlog, last_tvdb, last_proper_search) VALUES (?,?,?)", [0, str(when), 0])
+        else:
+            myDB.action("UPDATE info SET last_tvdb=" + str(when))
+
+    def _get_lastTVDBupdate(self):
+
+        myDB = db.DBConnection()
+        sqlResults = myDB.select("SELECT * FROM info")
+
+        try:
+            last_tvdbupdate = datetime.datetime.utcfromtimestamp(int(sqlResults[0]["last_tvdb"]))
+        except:
+            return datetime.datetime.utcfromtimestamp(1)
+
+        return last_tvdbupdate

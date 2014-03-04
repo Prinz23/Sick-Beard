@@ -52,7 +52,7 @@ class ProperFinder():
         logger.log(u"Checking proper time", logger.DEBUG)
 
         hourDiff = datetime.datetime.today().time().hour - updateTime.hour
-        dayDiff = (datetime.date.today() - self._get_lastProperSearch()).days
+        dayDiff = (datetime.datetime.now() - self._get_lastProperSearch()).days
 
         # if it's less than an interval after the update time then do an update
         if hourDiff >= 0 and hourDiff < self.updateInterval.seconds / 3600 or dayDiff >=1:
@@ -64,7 +64,7 @@ class ProperFinder():
 
         self._downloadPropers(propers)
         
-        self._set_lastProperSearch(datetime.datetime.today().toordinal())
+        self._set_lastProperSearch(helpers.dt_to_timestamp())
 
     def _getProperList(self):
 
@@ -258,7 +258,7 @@ class ProperFinder():
         sqlResults = myDB.select("SELECT * FROM info")
 
         if len(sqlResults) == 0:
-            myDB.action("INSERT INTO info (last_backlog, last_TVDB, last_proper_search) VALUES (?,?,?)", [0, 0, str(when)])
+            myDB.action("INSERT INTO info (last_backlog, last_tvdb, last_proper_search) VALUES (?,?,?)", [0, 0, str(when)])
         else:
             myDB.action("UPDATE info SET last_proper_search=" + str(when))
 
@@ -268,8 +268,8 @@ class ProperFinder():
         sqlResults = myDB.select("SELECT * FROM info")
 
         try:
-            last_proper_search = datetime.date.fromordinal(int(sqlResults[0]["last_proper_search"]))
+            last_proper_search = datetime.datetime.utcfromtimestamp(int(sqlResults[0]["last_proper_search"]))
         except:
-            return datetime.date.fromordinal(1)
+            return datetime.datetime.utcfromtimestamp(1)
 
         return last_proper_search

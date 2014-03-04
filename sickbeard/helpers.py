@@ -38,6 +38,9 @@ import urlparse
 import uuid
 import base64
 
+import datetime
+from calendar import timegm
+
 from httplib import BadStatusLine
 from itertools import izip, cycle
 
@@ -889,4 +892,8 @@ def encrypt(data, encryption_version=0, decrypt=False):
         return data
         
 def decrypt(data, encryption_version=0):
-	return encrypt(data, encryption_version, decrypt=True)
+    return encrypt(data, encryption_version, decrypt=True)
+
+# generate timestamp from datetime
+def dt_to_timestamp(dt=datetime.datetime.now()):
+    return timegm(dt.utctimetuple())
