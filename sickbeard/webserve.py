@@ -164,26 +164,32 @@ def _getEpisode(show, season, episode):
 
     return epObj
 
-def ManageMenu():
-        
-    manageMenu = [
-    { 'title': 'Backlog Overview',          'path': 'manage/backlogOverview/' },
-    { 'title': 'Manage Searches',           'path': 'manage/manageSearches/'  },
-    { 'title': 'Episode Status Management', 'path': 'manage/episodeStatuses/' },]
-
+def haveManageTorrents():
     if sickbeard.USE_TORRENTS and sickbeard.TORRENT_METHOD != 'blackhole' \
     and (sickbeard.ENABLE_HTTPS and sickbeard.TORRENT_HOST[:5] == 'https' \
     or not sickbeard.ENABLE_HTTPS and sickbeard.TORRENT_HOST[:5] == 'http:'):
-        manageMenu.append({ 'title': 'Manage Torrents', 'path': 'manage/manageTorrents/'})
+        return True
+    else:
+        return False
 
-    if sickbeard.USE_SUBTITLES:
-        manageMenu.append({ 'title': 'Missed Subtitle Management', 'path': 'manage/subtitleMissed/' })
-            
-    if sickbeard.USE_FAILED_DOWNLOADS:
-        manageMenu.append({ 'title': 'Failed Downloads', 'path': 'manage/failedDownloads/' })
+def useSubtitles():
+    return sickbeard.USE_SUBTITLES
+
+def useFailedDownload():
+    return sickbeard.USE_FAILED_DOWNLOADS
+
+def ManageMenu():
+        
+    manageMenu = [
+    { 'title': 'Backlog Overview',           'path': 'manage/backlogOverview/' },
+    { 'title': 'Manage Searches',            'path': 'manage/manageSearches/' },
+    { 'title': 'Manage Torrents',            'path': 'manage/manageTorrents/', 'requires': haveManageTorrents },
+    { 'title': 'Failed Downloads',           'path': 'manage/failedDownloads/', 'requires': useFailedDownload },
+    { 'title': 'Episode Status Management',  'path': 'manage/episodeStatuses/' },
+    { 'title': 'Missed Subtitle Management', 'path': 'manage/subtitleMissed/', 'requires': useSubtitles }
+    ]
 
     return manageMenu
-
 
 class ManageSearches:
 
@@ -1043,7 +1049,7 @@ class ConfigSearch:
         sickbeard.TORRENT_METHOD = torrent_method
         sickbeard.USENET_RETENTION = sickbeard.USENET_RETENTION = config.to_int(usenet_retention, default=500)
 
-        sickbeard.IGNORE_WORDS = ignore_words if not ignore_words else ""
+        sickbeard.IGNORE_WORDS = ignore_words if ignore_words else ""
 
         sickbeard.DOWNLOAD_PROPERS = config.checkbox_to_value(download_propers)
         if sickbeard.DOWNLOAD_PROPERS:

@@ -1735,7 +1735,7 @@ class TVEpisode(object):
                    '%D': str(self.airdate.day),
                    '%0M': '%02d' % self.airdate.month,
                    '%0D': '%02d' % self.airdate.day,
-                   '%RT': "PROPER" if self.is_proper else "",
+                   '%RT': 'PROPER' if self.is_proper else None,
                    }
 
     def _format_string(self, pattern, replace_map):
@@ -1779,7 +1779,10 @@ class TVEpisode(object):
             result_name = result_name.replace('%RG', 'SICKBEARD')
             result_name = result_name.replace('%rg', 'sickbeard')
             logger.log(u"Episode has no release name, replacing it with a generic one: " + result_name, logger.DEBUG)
-        
+
+        if not replace_map['%RT']:
+            result_name = re.sub('([ _.-]*)%RT([ _.-]*)', r'\2', result_name)
+
         # split off ep name part only
         name_groups = re.split(r'[\\/]', result_name)
 
