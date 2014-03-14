@@ -417,6 +417,7 @@ class TVShow(object):
 
         scannedEps = {}
 
+        sql_l = []
         for season in showObj:
             scannedEps[season] = {}
             for episode in showObj[season]:
@@ -440,10 +441,14 @@ class TVShow(object):
                     logger.log(str(self.tvdbid) + u": Loading info from theTVDB for episode " + str(season) + "x" + str(episode), logger.DEBUG)
                     ep.loadFromTVDB(season, episode, tvapi=t)
                     if ep.dirty:
-                        ep.saveToDB()
+                        sql_l.append(ep.get_sql())
 
                 scannedEps[season][episode] = True
 
+        if len(sql_l) > 0:
+            myDB = db.DBConnection()
+            myDB.mass_action(sql_l)
+        
         # Done updating save last update date
         self.last_update_tvdb = datetime.date.today().toordinal()
         self.saveToDB()
@@ -864,9 +869,10 @@ class TVShow(object):
     def deleteShow(self):
 
         myDB = db.DBConnection()
-        myDB.action("DELETE FROM tv_episodes WHERE showid = ?", [self.tvdbid])
-        myDB.action("DELETE FROM tv_shows WHERE tvdb_id = ?", [self.tvdbid])
-        myDB.action("DELETE FROM imdb_info WHERE tvdb_id = ?", [self.tvdbid])
+        sql_l = [["DELETE FROM tv_episodes WHERE showid = ?", [self.tvdbid]],
+                ["DELETE FROM tv_shows WHERE tvdb_id = ?", [self.tvdbid]],
+                ["DELETE FROM imdb_info WHERE tvdb_id = ?", [self.tvdbid]]]
+        myDB.mass_action(sql_l)
         
         # remove self from show list
         sickbeard.showList = [x for x in sickbeard.showList if x.tvdbid != self.tvdbid]
@@ -1269,8 +1275,9 @@ class TVEpisode(object):
                         raise exceptions.EpisodeNotFoundException("Couldn't find episode " + str(season) + "x" + str(episode))
 
         # don't update if not needed
-        if self.dirty:
-            self.saveToDB()
+        # don't save here or transaction is useless (double saving)
+        #if self.dirty:
+            #self.saveToDB()
 
     def loadFromDB(self, season, episode):
 
@@ -1570,6 +1577,22 @@ class TVEpisode(object):
         myDB.action(sql)
 
         raise exceptions.EpisodeDeletedException()
+
+    def get_sql(self, forceSave=False):
+        """
+        Creates SQL queue for this episode if any of its data has been changed since the last save.
+        
+        forceSave: If True it will create SQL queue even if no data has been changed since the
+                    last save (aka if the record is not dirty).
+        """
+
+        if not self.dirty and not forceSave:
+            logger.log(str(self.show.tvdbid) + u": Not creating SQL queue - record is not dirty", logger.DEBUG)
+            return
+
+        # use a custom update/insert method to get the data into the DB
+        return ["INSERT OR REPLACE INTO tv_episodes (episode_id, tvdbid, name, description, subtitles, subtitles_searchcount, subtitles_lastsearch, airdate, hasnfo, hastbn, status, location, file_size, release_name, is_proper, showid, season, episode) VALUES ((SELECT episode_id FROM tv_episodes WHERE showid = ? AND season = ? AND episode = ?),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);",
+        [self.show.tvdbid, self.season, self.episode, self.tvdbid, self.name, self.description, ",".join([sub for sub in self.subtitles]), self.subtitles_searchcount, self.subtitles_lastsearch, self.airdate.toordinal(), self.hasnfo, self.hastbn, self.status, self.location, self.file_size, self.release_name, self.is_proper, self.show.tvdbid, self.season, self.episode]]
 
     def saveToDB(self, forceSave=False):
         """
