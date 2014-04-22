@@ -18,6 +18,7 @@
 
 import os
 import re
+from urlparse import urljoin, urlparse
 
 import sickbeard
 import generic
@@ -30,6 +31,7 @@ from sickbeard import clients
 from sickbeard.exceptions import ex
 
 from lib import requests
+from lib.requests import exceptions
 from lib.bencode import bdecode
 
 class TorrentRssProvider(generic.TorrentProvider):
@@ -136,7 +138,8 @@ class TorrentRssProvider(generic.TorrentProvider):
             return None
             
         if response.status_code != 200:
-            logger.log(self.name + u" page requested with url " + url + " returned status code is " + str(response.status_code) + ': ' + clients.http_error_code[response.status_code], logger.WARNING)
+            logger.log(self.name + u" page requested with url " + url + " returned status code is " + str(
+                response.status_code) + ': ' + clients.http_error_code[response.status_code], logger.WARNING)
             return None
 
         return response.content
